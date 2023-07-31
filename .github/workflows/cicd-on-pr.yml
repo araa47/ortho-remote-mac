@@ -1,0 +1,8 @@
+---
+name: CI On PR
+
+on: pull_request
+
+jobs:
+    pre-commit:
+        uses: ./.github/workflows/pre-commit.yml

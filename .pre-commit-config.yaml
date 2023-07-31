@@ -1,0 +1,55 @@
+---
+default_language_version:
+    python: python3.11
+default_stages: [commit, push]
+repos:
+    - repo: https://github.com/pre-commit/pre-commit-hooks
+      rev: v4.4.0
+      hooks:
+          - id: check-executables-have-shebangs
+          - id: check-added-large-files
+          - id: check-docstring-first
+          - id: check-merge-conflict
+          - id: debug-statements
+          - id: end-of-file-fixer
+          - id: mixed-line-ending
+          - id: trailing-whitespace
+    - repo: https://github.com/adrienverge/yamllint.git
+      rev: v1.32.0
+      hooks:
+          - id: yamllint
+            args: [--format, parsable]
+            # exclude: streaming/charts/evmchain-etl-streaming/templates/.*$
+    - repo: https://github.com/jumanjihouse/pre-commit-hook-yamlfmt
+      rev: 0.2.3
+      hooks:
+          - id: yamlfmt
+            # exclude: streaming/charts/evmchain-etl-streaming/templates/.*$
+    # TODO: explore typeCheckingMode="strict" for black
+    - repo: https://github.com/psf/black
+      rev: 23.7.0
+      hooks:
+          - id: black
+            language_version: python3
+            args: [-t, py311]
+    - repo: https://github.com/pycqa/isort
+      rev: 5.12.0
+      hooks:
+          - id: isort
+            name: isort (python)
+    # TODO: mypy is removed, please explore: pyright
+    - repo: https://github.com/codespell-project/codespell
+      rev: v2.2.5
+      hooks:
+          - id: codespell
+            name: codespell
+            description: Checks for common misspellings in text files.
+            entry: codespell --ignore-words ignore-spelling-words.txt
+            language: python
+            types: [text]
+
+    - repo: https://github.com/astral-sh/ruff-pre-commit
+      # Ruff version.
+      rev: v0.0.280
+      hooks:
+          - id: ruff

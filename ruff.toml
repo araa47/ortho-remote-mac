@@ -1,0 +1,13 @@
+exclude = ["__pycache__", "terraform", ".git", ".venv"]
+extend-ignore = [
+    # In some cases, as determined by PEP 8,
+    # Black will enforce an equal amount of whitespace around slice operators.
+    "E203",
+
+    # Black enforces line length differently from flake8
+    # e.g. It doesn't fail long lines in multi-line strings or comments
+    "E501",
+
+    # Tasks added in dags may sometimes appear unused
+    "F841",
+]

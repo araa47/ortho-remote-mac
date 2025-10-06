@@ -1,19 +1,23 @@
 [project]
 name = "ortho-remote-mac"
 version = "0.1.0"
-description = ""
+description = "Control your Mac volume and media playback with an Ortho Remote"
 readme = "README.md"
 requires-python = ">=3.11.4"
 dependencies = [
     "mido>=1.3.0",
     "python-rtmidi>=1.5.5",
     "osascript>=2020.12.3",
+    "pyobjc-framework-Quartz>=10.0",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pre-commit>=3.3.3",
 ]
+
+[project.scripts]
+ortho-remote = "app:main"
 
 [tool.uv]
 package = true

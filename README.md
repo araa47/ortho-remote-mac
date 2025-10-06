@@ -14,15 +14,19 @@ This is a simply python script that is able to pair to the [Ortho Remote](https:
 
 [x] Play/Pause support using native media keys (works with any media player)
 
+[x] Next/Previous track with double-click and triple-click
+
 
 # Design Decisions
 
 - Since MIDI messages come in faster than volume can be adjusted, a queue is used and volume adjustments are done in a separate thread
 - **Volume control** uses `osascript` to set precise volume levels (0-100) based on the knob position
-- **Play/pause** uses `pyobjc-framework-Quartz` to send native macOS media key events
+- **Play/pause** uses `pyobjc-framework-Quartz` to send native macOS media key events (F8)
   - Works system-wide with **any** media player (Music, Spotify, Chrome, Safari, YouTube, etc.)
-  - Sends the same media key event as pressing F8 or physical media buttons
-  - No accessibility permissions required - works out of the box!
+  - **Note:** macOS will prompt for accessibility permissions on first run - make sure to allow them!
+- **Next/Previous track** uses AppleScript to control Spotify directly
+  - Currently only works with Spotify (not other media players)
+  - More reliable than media keys on modern macOS
 
 # Prerequisites
 
@@ -87,9 +91,13 @@ ortho-remote --help
 ## Controls
 
 - **Volume Control**: Turn the knob (control change on channel 1) to adjust Mac volume
-- **Play/Pause**: Press any button on the Ortho Remote to toggle play/pause
+- **Play/Pause**: Single-click any button to toggle play/pause (works with any media player)
+- **Next Track**: Double-click any button to skip to the next track (**Spotify only**)
+- **Previous Track**: Triple-click any button to go back to the previous track (**Spotify only**)
 
 The app will automatically detect and prefer MIDI devices with "ortho" in their name. If you have multiple MIDI devices, it will list them on startup.
+
+**Note:** Next/Previous track controls currently only work with Spotify. Play/pause works with all media players (Spotify, Music, Chrome, Safari, etc.).
 
 ## Supported Media Players
 
@@ -200,4 +208,6 @@ python app.py
 
 **Play/pause not working**: Ensure you have a media player running (Spotify, Music, Chrome with YouTube, etc.)
 
-**Permission errors**: The first time you run the app, macOS may ask for permissions - make sure to allow them.
+**Next/Previous track not working**: Make sure Spotify is running and playing. These controls only work with Spotify. You may also need to grant automation permissions in **System Settings > Privacy & Security > Automation > Terminal > Spotify**.
+
+**Permission errors**: The first time you run the app, macOS will ask for **Accessibility permissions** to send media key events. Go to **System Settings > Privacy & Security > Accessibility** and enable the permission for your Terminal or iTerm2.

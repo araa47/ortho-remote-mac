@@ -16,6 +16,11 @@ logger = logging.getLogger(__name__)
 volume_queue = queue.Queue()
 running = True  # Variable to control the execution of the thread
 
+# Click tracking for multi-click detection
+last_click_time = 0
+click_count = 0
+DOUBLE_CLICK_THRESHOLD = 0.3  # seconds
+
 
 def set_volume(value):
     """
@@ -55,13 +60,35 @@ def send_media_key(key_type, key_name):
     Quartz.CGEventPost(0, event.CGEvent())
 
     end_time = time.time()
-    logging.info(f"✅ {key_name} media key sent ({end_time - start_time:.3f}s)")
+    logger.info(f"⏯️  {key_name} ({end_time - start_time:.3f}s)")
 
 
 def play_pause():
     """Toggle play/pause for the active media player."""
     NX_KEYTYPE_PLAY = 16
     send_media_key(NX_KEYTYPE_PLAY, "Play/pause")
+
+
+def next_track():
+    """Skip to the next track (Spotify only)."""
+    start_time = time.time()
+
+    try:
+        osascript.run('tell application "Spotify" to next track')
+        logger.info(f"⏭️  Next track ({time.time() - start_time:.3f}s)")
+    except Exception as e:
+        logger.warning(f"⚠️  Next track failed: Is Spotify running? ({e})")
+
+
+def previous_track():
+    """Go to the previous track (Spotify only)."""
+    start_time = time.time()
+
+    try:
+        osascript.run('tell application "Spotify" to previous track')
+        logger.info(f"⏮️  Previous track ({time.time() - start_time:.3f}s)")
+    except Exception as e:
+        logger.warning(f"⚠️  Previous track failed: Is Spotify running? ({e})")
 
 
 def adjust_volume(value):
@@ -71,6 +98,53 @@ def adjust_volume(value):
 
     # Add the new value to the queue
     volume_queue.put(value)
+
+
+def handle_button_click():
+    """
+    Handle button clicks with multi-click detection.
+    Single click: play/pause
+    Double click: next track
+    Triple click: previous track
+    """
+    global last_click_time, click_count
+
+    current_time = time.time()
+    time_since_last_click = current_time - last_click_time
+
+    if time_since_last_click < DOUBLE_CLICK_THRESHOLD:
+        # This is part of a multi-click
+        click_count += 1
+    else:
+        # New click sequence - execute previous action if any
+        if click_count > 0:
+            execute_click_action(click_count)
+        click_count = 1
+
+    last_click_time = current_time
+
+    # Start a timer to execute the action after threshold
+    def delayed_execution():
+        time.sleep(DOUBLE_CLICK_THRESHOLD + 0.05)
+        global click_count
+        if time.time() - last_click_time >= DOUBLE_CLICK_THRESHOLD:
+            execute_click_action(click_count)
+            click_count = 0
+
+    threading.Thread(target=delayed_execution, daemon=True).start()
+
+
+def execute_click_action(clicks):
+    """Execute the appropriate action based on number of clicks."""
+    if clicks == 1:
+        logger.debug("Single click - Play/Pause")
+        play_pause()
+    elif clicks == 2:
+        logger.debug("Double click - Next Track")
+        next_track()
+    elif clicks >= 3:
+        logger.debug("Triple click - Previous Track")
+        previous_track()
 
 
 def handle_midi_messages(device_name):
@@ -86,15 +160,15 @@ def handle_midi_messages(device_name):
             # Control 1 is typically the modulation wheel - used for volume
             if msg.type == "control_change" and msg.control == 1:
                 adjust_volume(msg.value)
-            # Note_on messages for play/pause (from button presses)
+            # Note_on messages for button presses with multi-click detection
             elif msg.type == "note_on" and msg.velocity > 0:
                 logger.debug(f"Button pressed: note {msg.note}")
-                play_pause()
+                handle_button_click()
             # Control change messages for other buttons
             elif msg.type == "control_change" and msg.control != 1:
                 logger.debug(f"Control {msg.control} changed to {msg.value}")
                 # Uncomment the next line if your buttons send control_change messages
-                # play_pause()
+                # handle_button_click()
 
 
 def volume_thread_function():

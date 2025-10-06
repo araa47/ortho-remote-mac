@@ -24,6 +24,11 @@ This is a simply python script that is able to pair to the [Ortho Remote](https:
   - Sends the same media key event as pressing F8 or physical media buttons
   - No accessibility permissions required - works out of the box!
 
+# Prerequisites
+
+- **macOS** (required - this app uses macOS-specific APIs)
+- **[uv](https://docs.astral.sh/uv/)** - Modern Python package manager (installation instructions below)
+- **[direnv](https://direnv.net/)** (optional) - For development only, auto-loads environment when entering directory
 
 # Installation
 
@@ -43,7 +48,102 @@ uvx --from git+https://github.com/araa47/ortho-remote-mac ortho-remote
 
 That's it! Turn your knob to control volume, press buttons to play/pause.
 
-## Development Installation
+# Usage
+
+## Basic Usage
+
+**If you installed with `uvx` (Quick Start):**
+
+```bash
+# Run with auto-detection (prefers devices with "ortho" in the name)
+uvx --from git+https://github.com/araa47/ortho-remote-mac ortho-remote
+
+# Specify a specific device by name
+uvx --from git+https://github.com/araa47/ortho-remote-mac ortho-remote --device "ortho remote"
+
+# Enable debug logging to see all MIDI messages
+uvx --from git+https://github.com/araa47/ortho-remote-mac ortho-remote --debug
+
+# Show help
+uvx --from git+https://github.com/araa47/ortho-remote-mac ortho-remote --help
+```
+
+**If you cloned the repo (Development Installation):**
+
+```bash
+# Run with auto-detection
+ortho-remote
+
+# Specify a specific device by name
+ortho-remote --device "ortho remote"
+
+# Enable debug logging
+ortho-remote --debug
+
+# Show help
+ortho-remote --help
+```
+
+## Controls
+
+- **Volume Control**: Turn the knob (control change on channel 1) to adjust Mac volume
+- **Play/Pause**: Press any button on the Ortho Remote to toggle play/pause
+
+The app will automatically detect and prefer MIDI devices with "ortho" in their name. If you have multiple MIDI devices, it will list them on startup.
+
+## Supported Media Players
+
+The play/pause functionality works with **any media player** that responds to macOS media keys, including:
+- **Music app** (Apple Music)
+- **Spotify**
+- **Chrome/Safari** (YouTube, any streaming site)
+- **VLC, QuickTime Player, and other media players**
+- **Browser-based players** (SoundCloud, Netflix, etc.)
+
+Simply have any media playing, then press any button on your Ortho Remote to toggle play/pause!
+
+# Configuration
+
+## Device Selection
+
+The app automatically detects and prefers MIDI devices with "ortho" in their name. If you have multiple MIDI devices:
+
+1. **Run the app to see available devices:**
+   ```bash
+   # With uvx:
+   uvx --from git+https://github.com/araa47/ortho-remote-mac ortho-remote
+
+   # Or if cloned:
+   ortho-remote
+   ```
+   This will list all available MIDI devices.
+
+2. **Specify a device by name:**
+   ```bash
+   # With uvx:
+   uvx --from git+https://github.com/araa47/ortho-remote-mac ortho-remote --device "ortho remote"
+
+   # Or if cloned:
+   ortho-remote --device "ortho remote"
+   # partial name match also works
+   ortho-remote --device "ortho"
+   ```
+
+## Debug Mode
+
+To see all MIDI messages and detailed logging:
+
+```bash
+# With uvx:
+uvx --from git+https://github.com/araa47/ortho-remote-mac ortho-remote --debug
+
+# Or if cloned:
+ortho-remote --debug
+```
+
+This is useful for troubleshooting or understanding what MIDI messages your device sends.
+
+# Development Installation
 
 If you want to contribute or modify the code:
 
@@ -92,31 +192,6 @@ Follow the instructions [here](https://youtu.be/KhmEXMWnO_c) to pair your Ortho 
 ortho-remote
 # or
 python app.py
-```
-
-# Usage
-
-- **Volume Control**: Turn the knob (control change on channel 1) to adjust Mac volume
-- **Play/Pause**: Press any button on the Ortho Remote to toggle play/pause
-
-## Supported Media Players
-
-The play/pause functionality works with **any media player** that responds to macOS media keys, including:
-- **Music app** (Apple Music)
-- **Spotify**
-- **Chrome/Safari** (YouTube, any streaming site)
-- **VLC, QuickTime Player, and other media players**
-- **Browser-based players** (SoundCloud, Netflix, etc.)
-
-Simply have any media playing, then press any button on your Ortho Remote to toggle play/pause!
-
-# Configuration
-
-The script automatically selects the first available Bluetooth MIDI device. If you have multiple MIDI devices and want to select a specific one, you'll need to clone the repo and modify `app.py`:
-
-```python
-# In app.py, change:
-selected_device = midi_devices[0]  # Change the index number
 ```
 
 # Troubleshooting

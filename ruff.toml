@@ -1,4 +1,6 @@
 exclude = ["__pycache__", "terraform", ".git", ".venv"]
+
+[lint]
 extend-ignore = [
     # In some cases, as determined by PEP 8,
     # Black will enforce an equal amount of whitespace around slice operators.

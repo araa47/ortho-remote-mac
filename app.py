@@ -5,14 +5,13 @@ import sys
 import threading
 import time
 
+import click
 import mido
 import osascript
 import Quartz
 
-# Setup logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+# Setup logger
+logger = logging.getLogger(__name__)
 
 volume_queue = queue.Queue()
 running = True  # Variable to control the execution of the thread
@@ -29,7 +28,7 @@ def set_volume(value):
     new_volume = int(value * 100 / 127)
     osascript.run(f"set volume output volume {new_volume}")
     end_time = time.time()
-    logging.info(f"Setting volume took {end_time - start_time:.3f} seconds.")
+    logger.info(f"🔊 Volume set to {new_volume}% ({end_time - start_time:.3f}s)")
 
 
 def send_media_key(key_type, key_name):
@@ -81,18 +80,19 @@ def handle_midi_messages(device_name):
             if not running:
                 break
 
-            logging.info(f"MIDI Message - Type: {msg.type}, Data: {msg}")
+            # Log all MIDI messages at debug level
+            logger.debug(f"MIDI Message - Type: {msg.type}, Data: {msg}")
 
             # Control 1 is typically the modulation wheel - used for volume
             if msg.type == "control_change" and msg.control == 1:
                 adjust_volume(msg.value)
             # Note_on messages for play/pause (from button presses)
             elif msg.type == "note_on" and msg.velocity > 0:
-                logging.info(f"🎵 Button pressed: note {msg.note} - Play/Pause")
+                logger.debug(f"Button pressed: note {msg.note}")
                 play_pause()
             # Control change messages for other buttons
             elif msg.type == "control_change" and msg.control != 1:
-                logging.info(f"🎛️  Control {msg.control} changed to {msg.value}")
+                logger.debug(f"Control {msg.control} changed to {msg.value}")
                 # Uncomment the next line if your buttons send control_change messages
                 # play_pause()
 
@@ -114,21 +114,89 @@ def volume_thread_function():
 def signal_handler(sig, frame):
     global running
     running = False
-    logging.info("\nInterrupted by user. Exiting.")
+    logger.info("\n👋 Interrupted by user. Exiting.")
     # Put sentinel value to wake up volume thread
     volume_queue.put(None)
     sys.exit(0)
 
 
-def main():
+def select_device(device_name=None):
+    """Select the appropriate MIDI device."""
+    midi_devices = mido.get_input_names()
+
+    if not midi_devices:
+        logger.error("❌ No MIDI devices found!")
+        logger.error("Make sure your Ortho Remote is paired via Bluetooth.")
+        sys.exit(1)
+
+    logger.info("📱 Available MIDI devices:")
+    for i, device in enumerate(midi_devices):
+        logger.info(f"  [{i}] {device}")
+
+    # If user specified a device name
+    if device_name:
+        # Try exact match
+        if device_name in midi_devices:
+            logger.info(f"✅ Selected device: {device_name}")
+            return device_name
+
+        # Try case-insensitive partial match
+        for device in midi_devices:
+            if device_name.lower() in device.lower():
+                logger.info(f"✅ Selected device: {device}")
+                return device
+
+        logger.error(f"❌ Device '{device_name}' not found!")
+        sys.exit(1)
+
+    # Auto-select: prefer devices with "ortho" in the name
+    for device in midi_devices:
+        if "ortho" in device.lower():
+            logger.info(f"✅ Auto-selected device: {device}")
+            return device
+
+    # Fallback to first device
+    selected = midi_devices[0]
+    logger.info(f"✅ Selected first available device: {selected}")
+    return selected
+
+
+@click.command()
+@click.option(
+    "--device",
+    "-d",
+    help="MIDI device name or partial name to use (default: auto-detect 'ortho')",
+)
+@click.option(
+    "--debug", is_flag=True, help="Enable debug logging (shows all MIDI messages)"
+)
+def main(device, debug):
+    """
+    Control your Mac volume and media playback with an Ortho Remote.
+
+    Turn the knob to adjust volume, press buttons to play/pause.
+    """
+    # Setup logging
+    log_level = logging.DEBUG if debug else logging.INFO
+    logging.basicConfig(
+        level=log_level,
+        format=(
+            "%(message)s" if not debug else "%(asctime)s - %(levelname)s - %(message)s"
+        ),
+    )
+
     signal.signal(signal.SIGINT, signal_handler)
 
-    # this will be the list of midi devices
-    midi_devices = mido.get_input_names()
-    logging.info(f"Available MIDI devices: {midi_devices}")
+    logger.info("🎛️  Ortho Remote Mac Controller")
+    logger.info("=" * 40)
 
-    selected_device = midi_devices[0]
-    logging.info(f"Midi Device: {selected_device} will be auto selected!")
+    # Select MIDI device
+    selected_device = select_device(device)
+
+    logger.info("=" * 40)
+    logger.info("🎵 Ready! Turn knob for volume, press button for play/pause")
+    logger.info("Press Ctrl+C to exit")
+    logger.info("=" * 40)
 
     # Start the volume thread as daemon so it doesn't block exit
     volume_thread = threading.Thread(target=volume_thread_function, daemon=True)
@@ -142,7 +210,7 @@ def main():
         running = False
         volume_queue.put(None)  # Wake up volume thread
         volume_thread.join(timeout=2)  # Wait up to 2 seconds for clean shutdown
-        logging.info("Shutdown complete.")
+        logger.info("👋 Shutdown complete.")
 
 
 if __name__ == "__main__":

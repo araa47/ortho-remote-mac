@@ -1,6 +1,7 @@
 import logging
 import queue
 import signal
+import sys
 import threading
 import time
 
@@ -14,7 +15,6 @@ logging.basicConfig(
 
 volume_queue = queue.Queue()
 running = True  # Variable to control the execution of the thread
-in_port = None
 
 
 def set_volume(value):
@@ -37,15 +37,13 @@ def adjust_volume(value):
 
 def handle_midi_messages(device_name):
     global running
-    global in_port
-    with mido.open_input(device_name) as in_port:
-        for msg in in_port:
+    with mido.open_input(device_name) as port:
+        for msg in port:
+            if not running:
+                break
+
             logging.info(msg.type)
             logging.info(msg)
-
-            if not running:
-                in_port.close()
-                break
 
             if msg.type == "control_change" and msg.control == 1:
                 adjust_volume(msg.value)
@@ -54,17 +52,24 @@ def handle_midi_messages(device_name):
 def volume_thread_function():
     global running
     while running:
-        # Wait for a new item in the queue
-        volume_value = volume_queue.get()
-        set_volume(volume_value)
+        try:
+            # Wait for a new item in the queue with timeout
+            volume_value = volume_queue.get(timeout=0.5)
+            if volume_value is None:  # Sentinel value to exit
+                break
+            set_volume(volume_value)
+        except queue.Empty:
+            # Timeout occurred, check running flag and continue
+            continue
 
 
-def signal_handler(signal, frame):
+def signal_handler(sig, frame):
     global running
-    global in_port
     running = False
     logging.info("\nInterrupted by user. Exiting.")
-    in_port.close()
+    # Put sentinel value to wake up volume thread
+    volume_queue.put(None)
+    sys.exit(0)
 
 
 def main():
@@ -77,17 +82,19 @@ def main():
     selected_device = midi_devices[0]
     logging.info(f"Midi Device: {selected_device} will be auto selected!")
 
-    # Start the volume thread
-    volume_thread = threading.Thread(target=volume_thread_function)
+    # Start the volume thread as daemon so it doesn't block exit
+    volume_thread = threading.Thread(target=volume_thread_function, daemon=True)
     volume_thread.start()
 
     try:
         handle_midi_messages(selected_device)
     except KeyboardInterrupt:
-        signal_handler(None, None)
-
-    # wait for the thread to finish
-    volume_thread.join()
+        pass
+    finally:
+        running = False
+        volume_queue.put(None)  # Wake up volume thread
+        volume_thread.join(timeout=2)  # Wait up to 2 seconds for clean shutdown
+        logging.info("Shutdown complete.")
 
 
 if __name__ == "__main__":

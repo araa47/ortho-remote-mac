@@ -81,8 +81,8 @@ def send_media_key(key_type, key_name):
     """Send a media key event using Quartz."""
     start_time = time.time()
 
-    event = Quartz.NSEvent.otherEventWithType_location_modifierFlags_timestamp_windowNumber_context_subtype_data1_data2_(
-        Quartz.NSSystemDefined,
+    event = Quartz.NSEvent.otherEventWithType_location_modifierFlags_timestamp_windowNumber_context_subtype_data1_data2_(  # ty: ignore[unresolved-attribute]
+        Quartz.NSSystemDefined,  # ty: ignore[unresolved-attribute]
         (0, 0),
         0xA00,
         0,
@@ -92,7 +92,7 @@ def send_media_key(key_type, key_name):
         (key_type << 16) | (0xA << 8),
         -1,
     )
-    Quartz.CGEventPost(0, event.CGEvent())
+    Quartz.CGEventPost(0, event.CGEvent())  # ty: ignore[unresolved-attribute]
 
     end_time = time.time()
     logger.info(f"⏯️  {key_name} ({end_time - start_time:.3f}s)")
@@ -168,7 +168,7 @@ def execute_click_action(clicks):
 
 def handle_midi_messages(device_name):
     global running
-    with mido.open_input(device_name) as port:
+    with mido.open_input(device_name) as port:  # ty: ignore[unresolved-attribute]
         for msg in port:
             if not running:
                 break
@@ -211,7 +211,7 @@ def signal_handler(sig, frame):
 
 def select_device(device_name=None):
     """Select the appropriate MIDI device."""
-    midi_devices = mido.get_input_names()
+    midi_devices = mido.get_input_names()  # ty: ignore[unresolved-attribute]
 
     if not midi_devices:
         logger.error("❌ No MIDI devices found!")

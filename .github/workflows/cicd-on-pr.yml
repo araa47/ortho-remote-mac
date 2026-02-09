@@ -4,5 +4,5 @@ name: CI On PR
 on: pull_request
 
 jobs:
-    pre-commit:
-        uses: ./.github/workflows/job-pre-commit.yml
+    prek:
+        uses: ./.github/workflows/job-prek.yml

@@ -7,7 +7,7 @@ import time
 import Quartz
 
 try:
-    from ortho_remote_rs import VolumeCoalescer
+    from ortho_remote_rs import VolumeCoalescer  # ty: ignore[unresolved-import]
 except Exception:
     VolumeCoalescer = None
 
@@ -57,8 +57,8 @@ def get_soundsource_volume(force_refresh: bool = False) -> int:
 
 def send_volume_key(key_type: int) -> None:
     """Send native volume key event (0=up, 1=down)."""
-    event_down = Quartz.NSEvent.otherEventWithType_location_modifierFlags_timestamp_windowNumber_context_subtype_data1_data2_(
-        Quartz.NSSystemDefined,
+    event_down = Quartz.NSEvent.otherEventWithType_location_modifierFlags_timestamp_windowNumber_context_subtype_data1_data2_(  # ty: ignore[unresolved-attribute]
+        Quartz.NSSystemDefined,  # ty: ignore[unresolved-attribute]
         (0, 0),
         0xA00,
         0,
@@ -69,8 +69,8 @@ def send_volume_key(key_type: int) -> None:
         -1,
     )
 
-    event_up = Quartz.NSEvent.otherEventWithType_location_modifierFlags_timestamp_windowNumber_context_subtype_data1_data2_(
-        Quartz.NSSystemDefined,
+    event_up = Quartz.NSEvent.otherEventWithType_location_modifierFlags_timestamp_windowNumber_context_subtype_data1_data2_(  # ty: ignore[unresolved-attribute]
+        Quartz.NSSystemDefined,  # ty: ignore[unresolved-attribute]
         (0, 0),
         0xB00,
         0,
@@ -81,8 +81,8 @@ def send_volume_key(key_type: int) -> None:
         -1,
     )
 
-    Quartz.CGEventPost(0, event_down.CGEvent())
-    Quartz.CGEventPost(0, event_up.CGEvent())
+    Quartz.CGEventPost(0, event_down.CGEvent())  # ty: ignore[unresolved-attribute]
+    Quartz.CGEventPost(0, event_up.CGEvent())  # ty: ignore[unresolved-attribute]
 
 
 def set_volume_precise(target_volume: int, logger=None) -> None:

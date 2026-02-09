@@ -19,7 +19,7 @@ This is a simply python script that is able to pair to the [Ortho Remote](https:
 
 # Design Decisions
 
-- Since MIDI messages come in faster than volume can be adjusted, a queue is used and volume adjustments are done in a separate thread
+- Since MIDI messages can arrive faster than volume can be adjusted, the app coalesces to the latest target and applies adjustments on a worker thread
 - **Volume control** defaults to `SoundSource` output volume when available (falls back to `osascript` system volume)
 - **Play/pause** uses `pyobjc-framework-Quartz` to send native macOS media key events (F8)
   - Works system-wide with **any** media player (Music, Spotify, Chrome, Safari, YouTube, etc.)
@@ -51,6 +51,15 @@ uvx --from git+https://github.com/araa47/ortho-remote-mac ortho-remote
 ```
 
 That's it! Turn your knob to control volume, press buttons to play/pause.
+
+To enable the optional Rust realtime SoundSource accelerator with `uvx`:
+
+```bash
+uvx \
+  --from git+https://github.com/araa47/ortho-remote-mac \
+  --with 'ortho-remote-rs @ git+https://github.com/araa47/ortho-remote-mac#subdirectory=rust/ortho_remote_rs' \
+  ortho-remote
+```
 
 # Usage
 
@@ -217,6 +226,25 @@ Follow the instructions [here](https://youtu.be/KhmEXMWnO_c) to pair your Ortho 
 ortho-remote
 # or
 python app.py
+```
+
+## Rust Realtime Accelerator (Optional)
+
+For lower-latency SoundSource volume planning, install the Rust extension:
+
+```bash
+uv pip install -e rust/ortho_remote_rs
+```
+
+If the extension is not installed, the app automatically falls back to the Python planner.
+
+For `uvx`, include the Rust package via `--with`:
+
+```bash
+uvx \
+  --from git+https://github.com/araa47/ortho-remote-mac \
+  --with 'ortho-remote-rs @ git+https://github.com/araa47/ortho-remote-mac#subdirectory=rust/ortho_remote_rs' \
+  ortho-remote --volume-backend soundsource
 ```
 
 # Troubleshooting

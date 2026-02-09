@@ -2,7 +2,6 @@
 
 import logging
 import os
-import queue
 import signal
 import sys
 import threading
@@ -24,9 +23,10 @@ from ortho_remote.backends.system import set_system_volume
 
 logger = logging.getLogger(__name__)
 
-volume_queue = queue.Queue()
 running = True
 volume_backend = "system"
+pending_volume_value: int | None = None
+volume_condition = threading.Condition()
 
 last_click_time = 0
 click_count = 0
@@ -122,9 +122,10 @@ def previous_track():
 
 
 def adjust_volume(value):
-    while not volume_queue.empty():
-        volume_queue.get()
-    volume_queue.put(value)
+    global pending_volume_value
+    with volume_condition:
+        pending_volume_value = value
+        volume_condition.notify()
 
 
 def handle_button_click():
@@ -183,22 +184,28 @@ def handle_midi_messages(device_name):
 
 
 def volume_thread_function():
-    global running
+    global running, pending_volume_value
     while running:
-        try:
-            volume_value = volume_queue.get(timeout=0.5)
-            if volume_value is None:
+        with volume_condition:
+            while running and pending_volume_value is None:
+                volume_condition.wait(timeout=0.5)
+
+            if not running and pending_volume_value is None:
                 break
+
+            volume_value = pending_volume_value
+            pending_volume_value = None
+
+        if volume_value is not None:
             set_volume(volume_value)
-        except queue.Empty:
-            continue
 
 
 def signal_handler(sig, frame):
     global running
     running = False
     logger.info("\n👋 Interrupted by user. Exiting.")
-    volume_queue.put(None)
+    with volume_condition:
+        volume_condition.notify_all()
     sys.exit(0)
 
 
@@ -293,7 +300,8 @@ def start(
         pass
     finally:
         running = False
-        volume_queue.put(None)
+        with volume_condition:
+            volume_condition.notify_all()
         volume_thread.join(timeout=2)
         logger.info("👋 Shutdown complete.")
 

@@ -6,6 +6,11 @@ import time
 
 import Quartz
 
+try:
+    from ortho_remote_rs import VolumeCoalescer
+except Exception:
+    VolumeCoalescer = None
+
 SOUNDSOURCE_SOURCES_PLIST = os.path.expanduser(
     "~/Library/Application Support/SoundSource/Sources.plist"
 )
@@ -17,6 +22,7 @@ MAX_STEPS_PER_CALL = int(os.getenv("ORTHO_SOUNDSOURCE_MAX_STEPS", "8"))
 _cached_volume = None
 _last_plist_read = 0
 PLIST_CACHE_SECONDS = 1.0
+_rust_coalescer = None
 
 
 def get_soundsource_volume(force_refresh: bool = False) -> int:
@@ -81,13 +87,38 @@ def send_volume_key(key_type: int) -> None:
 
 def set_volume_precise(target_volume: int, logger=None) -> None:
     """Set SoundSource output volume to target level (0-100)."""
-    global _cached_volume
+    global _cached_volume, _rust_coalescer
 
     target_volume = max(0, min(100, int(target_volume)))
     current = _cached_volume if _cached_volume is not None else get_soundsource_volume()
 
     if logger:
         logger.debug(f"Current volume: {current}%, Target: {target_volume}%")
+
+    if VolumeCoalescer is not None:
+        if _rust_coalescer is None:
+            try:
+                _rust_coalescer = VolumeCoalescer(
+                    current, VOLUME_STEP, MAX_STEPS_PER_CALL
+                )
+            except Exception:
+                _rust_coalescer = None
+        if _rust_coalescer is not None:
+            _rust_coalescer.reset_current(current)
+            _rust_coalescer.update_target(target_volume)
+            action = _rust_coalescer.next_action()
+            if action is None:
+                return
+            key_type, steps, estimated = action
+            for _ in range(steps):
+                send_volume_key(key_type)
+                time.sleep(STEP_DELAY_SECONDS)
+            _cached_volume = int(estimated)
+            if logger:
+                logger.debug(
+                    f"Rust planner sent {steps} key presses, estimated new volume: {_cached_volume}%"
+                )
+            return
 
     diff = target_volume - current
     if abs(diff) < VOLUME_STEP / 2:
@@ -120,7 +151,8 @@ def set_volume_precise(target_volume: int, logger=None) -> None:
 
 def sync_with_soundsource() -> int:
     """Force-sync cache with current SoundSource volume."""
-    global _cached_volume, _last_plist_read
+    global _cached_volume, _last_plist_read, _rust_coalescer
     _cached_volume = None
     _last_plist_read = 0
+    _rust_coalescer = None
     return get_soundsource_volume(force_refresh=True)

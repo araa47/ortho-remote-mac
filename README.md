@@ -20,7 +20,7 @@ This is a simply python script that is able to pair to the [Ortho Remote](https:
 # Design Decisions
 
 - Since MIDI messages come in faster than volume can be adjusted, a queue is used and volume adjustments are done in a separate thread
-- **Volume control** uses `osascript` to set precise volume levels (0-100) based on the knob position
+- **Volume control** defaults to `SoundSource` output volume when available (falls back to `osascript` system volume)
 - **Play/pause** uses `pyobjc-framework-Quartz` to send native macOS media key events (F8)
   - Works system-wide with **any** media player (Music, Spotify, Chrome, Safari, YouTube, etc.)
   - **Note:** macOS will prompt for accessibility permissions on first run - make sure to allow them!
@@ -68,6 +68,12 @@ uvx --from git+https://github.com/araa47/ortho-remote-mac ortho-remote --device 
 # Enable debug logging to see all MIDI messages
 uvx --from git+https://github.com/araa47/ortho-remote-mac ortho-remote --debug
 
+# Force SoundSource volume backend
+uvx --from git+https://github.com/araa47/ortho-remote-mac ortho-remote --volume-backend soundsource
+
+# Force macOS system volume backend
+uvx --from git+https://github.com/araa47/ortho-remote-mac ortho-remote --volume-backend system
+
 # Show help
 uvx --from git+https://github.com/araa47/ortho-remote-mac ortho-remote --help
 ```
@@ -84,6 +90,12 @@ ortho-remote --device "ortho remote"
 # Enable debug logging
 ortho-remote --debug
 
+# Force SoundSource volume backend
+ortho-remote --volume-backend soundsource
+
+# Force macOS system volume backend
+ortho-remote --volume-backend system
+
 # Show help
 ortho-remote --help
 ```
@@ -96,6 +108,11 @@ ortho-remote --help
 - **Previous Track**: Triple-click any button to go back to the previous track (**Spotify only**)
 
 The app will automatically detect and prefer MIDI devices with "ortho" in their name. If you have multiple MIDI devices, it will list them on startup.
+
+Volume backend behavior:
+- `auto` (default): use SoundSource output volume if SoundSource is installed, otherwise use macOS system volume
+- `soundsource`: require and control SoundSource output volume
+- `system`: control macOS system output volume directly
 
 **Note:** Next/Previous track controls currently only work with Spotify. Play/pause works with all media players (Spotify, Music, Chrome, Safari, etc.).
 
@@ -211,3 +228,5 @@ python app.py
 **Next/Previous track not working**: Make sure Spotify is running and playing. These controls only work with Spotify. You may also need to grant automation permissions in **System Settings > Privacy & Security > Automation > Terminal > Spotify**.
 
 **Permission errors**: The first time you run the app, macOS will ask for **Accessibility permissions** to send media key events. Go to **System Settings > Privacy & Security > Accessibility** and enable the permission for your Terminal or iTerm2.
+
+**SoundSource volume not changing**: Run with `--volume-backend soundsource` and make sure SoundSource is installed/running and your output device (for example Fiio R7) is selected in SoundSource.

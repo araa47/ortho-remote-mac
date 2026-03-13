@@ -24,6 +24,7 @@ dev = [
 
 [project.scripts]
 ortho-remote = "ortho_remote.cli:main"
+orm = "ortho_remote.cli:main"
 
 [tool.uv]
 package = true

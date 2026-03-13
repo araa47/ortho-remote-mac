@@ -46,6 +46,82 @@ Upgrade later:
 uv tool upgrade ortho-remote-mac
 ```
 
+## Run Automatically At Login (macOS launchd)
+
+If you want `orm` always ready in the background, run it with a user `LaunchAgent`.
+
+1) Install the tool once (recommended for `launchd`):
+
+```bash
+uv tool install git+https://github.com/araa47/ortho-remote-mac
+```
+
+2) Create `~/Library/LaunchAgents/com.user.ortho-remote-mac.plist`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.user.ortho-remote-mac</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/YOUR_USER/.local/bin/orm</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/YOUR_USER</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/Users/YOUR_USER/.local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/YOUR_USER/Library/Logs/ortho-remote-mac.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/YOUR_USER/Library/Logs/ortho-remote-mac.log</string>
+</dict>
+</plist>
+```
+
+Replace `YOUR_USER` with your macOS username.
+
+3) Load and start it:
+
+```bash
+launchctl bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/com.user.ortho-remote-mac.plist"
+launchctl kickstart -k "gui/$(id -u)/com.user.ortho-remote-mac"
+```
+
+4) Verify status:
+
+```bash
+launchctl print "gui/$(id -u)/com.user.ortho-remote-mac"
+```
+
+5) View logs:
+
+```bash
+tail -f "$HOME/Library/Logs/ortho-remote-mac.log"
+```
+
+Stop/unload later:
+
+```bash
+launchctl bootout "gui/$(id -u)" "com.user.ortho-remote-mac"
+```
+
 ## Common Usage
 
 ```bash

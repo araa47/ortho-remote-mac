@@ -1,260 +1,107 @@
 # Ortho Remote Mac
 
-This is a simply python script that is able to pair to the [Ortho Remote](https://teenage.engineering/products/orthoremote) sold by [Teenage.engineering](https://teenage.engineering) , and when run can control yous macs volume when paired.
+Control macOS volume and playback with a paired [Ortho Remote](https://teenage.engineering/products/orthoremote).
 
-# Current Features
+This project follows a `uv` + `prek` workflow similar to [cookiecutter-python-uv-boilerplate](https://github.com/araa47/cookiecutter-python-uv-boilerplate).
 
-[x] Is able to pair with Ortho Remote
+## Requirements
 
-[x] Is able to detect control_change signals to control channel 0 (gets values 0 - 127 from turning the knob)
+- macOS
+- [uv](https://docs.astral.sh/uv/)
+- Ortho Remote paired to your Mac ([pairing video](https://youtu.be/KhmEXMWnO_c))
 
-[x] Uses the control_change signals to adjust mac volume
+## Quick Start (No Clone)
 
-[x] Safe shutdown (ctr+c shuts app properly)
-
-[x] Play/Pause support using native media keys (works with any media player)
-
-[x] Next/Previous track with double-click and triple-click
-
-
-# Design Decisions
-
-- Since MIDI messages can arrive faster than volume can be adjusted, the app coalesces to the latest target and applies adjustments on a worker thread
-- **Volume control** defaults to `SoundSource` output volume when available (falls back to `osascript` system volume)
-- **Play/pause** uses `pyobjc-framework-Quartz` to send native macOS media key events (F8)
-  - Works system-wide with **any** media player (Music, Spotify, Chrome, Safari, YouTube, etc.)
-  - **Note:** macOS will prompt for accessibility permissions on first run - make sure to allow them!
-- **Next/Previous track** uses AppleScript to control Spotify directly
-  - Currently only works with Spotify (not other media players)
-  - More reliable than media keys on modern macOS
-
-# Prerequisites
-
-- **macOS** (required - this app uses macOS-specific APIs)
-- **[uv](https://docs.astral.sh/uv/)** - Modern Python package manager (installation instructions below)
-- **[direnv](https://direnv.net/)** (optional) - For development only, auto-loads environment when entering directory
-
-# Installation
-
-## Quick Start (Recommended)
-
-The easiest way to run ortho-remote-mac is with `uvx` (no cloning required):
+Run directly from GitHub with `uvx`:
 
 ```bash
-# Install uv if you haven't already
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Pair your Ortho Remote to your Mac (follow instructions: https://youtu.be/KhmEXMWnO_c)
-
-# Run directly from GitHub
 uvx --from git+https://github.com/araa47/ortho-remote-mac ortho-remote
 ```
 
-That's it! Turn your knob to control volume, press buttons to play/pause.
-
-To enable the optional Rust realtime SoundSource accelerator with `uvx`:
+You can also use the shortcut command:
 
 ```bash
-uvx \
-  --from git+https://github.com/araa47/ortho-remote-mac \
-  --with 'ortho-remote-rs @ git+https://github.com/araa47/ortho-remote-mac#subdirectory=rust/ortho_remote_rs' \
-  ortho-remote
+uvx --from git+https://github.com/araa47/ortho-remote-mac orm
 ```
 
-# Usage
+## Install As A Local Tool (Recommended If You Use It Often)
 
-## Basic Usage
-
-**If you installed with `uvx` (Quick Start):**
+Install once:
 
 ```bash
-# Run with auto-detection (prefers devices with "ortho" in the name)
-uvx --from git+https://github.com/araa47/ortho-remote-mac ortho-remote
-
-# Specify a specific device by name
-uvx --from git+https://github.com/araa47/ortho-remote-mac ortho-remote --device "ortho remote"
-
-# Enable debug logging to see all MIDI messages
-uvx --from git+https://github.com/araa47/ortho-remote-mac ortho-remote --debug
-
-# Force SoundSource volume backend
-uvx --from git+https://github.com/araa47/ortho-remote-mac ortho-remote --volume-backend soundsource
-
-# Force macOS system volume backend
-uvx --from git+https://github.com/araa47/ortho-remote-mac ortho-remote --volume-backend system
-
-# Show help
-uvx --from git+https://github.com/araa47/ortho-remote-mac ortho-remote --help
+uv tool install git+https://github.com/araa47/ortho-remote-mac
 ```
 
-**If you cloned the repo (Development Installation):**
-
-```bash
-# Run with auto-detection
-ortho-remote
-
-# Specify a specific device by name
-ortho-remote --device "ortho remote"
-
-# Enable debug logging
-ortho-remote --debug
-
-# Force SoundSource volume backend
-ortho-remote --volume-backend soundsource
-
-# Force macOS system volume backend
-ortho-remote --volume-backend system
-
-# Show help
-ortho-remote --help
-```
-
-## Controls
-
-- **Volume Control**: Turn the knob (control change on channel 1) to adjust Mac volume
-- **Play/Pause**: Single-click any button to toggle play/pause (works with any media player)
-- **Next Track**: Double-click any button to skip to the next track (**Spotify only**)
-- **Previous Track**: Triple-click any button to go back to the previous track (**Spotify only**)
-
-The app will automatically detect and prefer MIDI devices with "ortho" in their name. If you have multiple MIDI devices, it will list them on startup.
-
-Volume backend behavior:
-- `auto` (default): use SoundSource output volume if SoundSource is installed, otherwise use macOS system volume
-- `soundsource`: require and control SoundSource output volume
-- `system`: control macOS system output volume directly
-
-**Note:** Next/Previous track controls currently only work with Spotify. Play/pause works with all media players (Spotify, Music, Chrome, Safari, etc.).
-
-## Supported Media Players
-
-The play/pause functionality works with **any media player** that responds to macOS media keys, including:
-- **Music app** (Apple Music)
-- **Spotify**
-- **Chrome/Safari** (YouTube, any streaming site)
-- **VLC, QuickTime Player, and other media players**
-- **Browser-based players** (SoundCloud, Netflix, etc.)
-
-Simply have any media playing, then press any button on your Ortho Remote to toggle play/pause!
-
-# Configuration
-
-## Device Selection
-
-The app automatically detects and prefers MIDI devices with "ortho" in their name. If you have multiple MIDI devices:
-
-1. **Run the app to see available devices:**
-   ```bash
-   # With uvx:
-   uvx --from git+https://github.com/araa47/ortho-remote-mac ortho-remote
-
-   # Or if cloned:
-   ortho-remote
-   ```
-   This will list all available MIDI devices.
-
-2. **Specify a device by name:**
-   ```bash
-   # With uvx:
-   uvx --from git+https://github.com/araa47/ortho-remote-mac ortho-remote --device "ortho remote"
-
-   # Or if cloned:
-   ortho-remote --device "ortho remote"
-   # partial name match also works
-   ortho-remote --device "ortho"
-   ```
-
-## Debug Mode
-
-To see all MIDI messages and detailed logging:
-
-```bash
-# With uvx:
-uvx --from git+https://github.com/araa47/ortho-remote-mac ortho-remote --debug
-
-# Or if cloned:
-ortho-remote --debug
-```
-
-This is useful for troubleshooting or understanding what MIDI messages your device sends.
-
-# Development Installation
-
-If you want to contribute or modify the code:
-
-1) Clone the repository
-
-```bash
-git clone https://github.com/araa47/ortho-remote-mac.git
-cd ortho-remote-mac
-```
-
-2) Install uv and direnv
-
-```bash
-# Install uv
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Install direnv (macOS)
-brew install direnv
-```
-
-3) Configure direnv
-
-Add direnv hook to your shell config (`~/.zshrc` for zsh or `~/.bashrc` for bash):
-
-```bash
-eval "$(direnv hook zsh)"  # for zsh
-# OR
-eval "$(direnv hook bash)"  # for bash
-```
-
-Restart your shell or run `source ~/.zshrc` (or `~/.bashrc`).
-
-4) Allow direnv and install dependencies
-
-```bash
-direnv allow
-```
-
-5) Pair your Ortho Remote
-
-Follow the instructions [here](https://youtu.be/KhmEXMWnO_c) to pair your Ortho Remote to your Mac.
-
-6) Run the app
+Run anytime:
 
 ```bash
 ortho-remote
 # or
-python app.py
+orm
 ```
 
-## Rust Realtime Accelerator (Optional)
-
-For lower-latency SoundSource volume planning, install the Rust extension:
+Upgrade later:
 
 ```bash
-uv pip install -e rust/ortho_remote_rs
+uv tool upgrade ortho-remote-mac
 ```
 
-If the extension is not installed, the app automatically falls back to the Python planner.
+## Common Usage
 
-For `uvx`, include the Rust package via `--with`:
+```bash
+# Auto-detect MIDI device (prefers names containing "ortho")
+orm
+
+# Pick a specific MIDI device
+orm --device "ortho remote"
+
+# Debug MIDI events
+orm --debug
+
+# Choose volume backend
+orm --volume-backend auto
+orm --volume-backend soundsource
+orm --volume-backend system
+```
+
+## Controls
+
+- Turn knob: set volume
+- Single click: play/pause (any media app)
+- Double click: next track (Spotify)
+- Triple click: previous track (Spotify)
+
+## Optional: Rust SoundSource Accelerator
+
+For lower-latency SoundSource planning with `uvx`:
 
 ```bash
 uvx \
   --from git+https://github.com/araa47/ortho-remote-mac \
   --with 'ortho-remote-rs @ git+https://github.com/araa47/ortho-remote-mac#subdirectory=rust/ortho_remote_rs' \
-  ortho-remote --volume-backend soundsource
+  orm --volume-backend soundsource
 ```
 
-# Troubleshooting
+## Development Setup
 
-**"No MIDI devices found"**: Make sure your Ortho Remote is paired via Bluetooth and appears in Audio MIDI Setup.
+```bash
+git clone https://github.com/araa47/ortho-remote-mac.git
+cd ortho-remote-mac
+direnv allow
+```
 
-**Play/pause not working**: Ensure you have a media player running (Spotify, Music, Chrome with YouTube, etc.)
+`direnv allow` runs `uv sync --all-extras --dev` and installs `prek` hooks.
 
-**Next/Previous track not working**: Make sure Spotify is running and playing. These controls only work with Spotify. You may also need to grant automation permissions in **System Settings > Privacy & Security > Automation > Terminal > Spotify**.
+Run checks:
 
-**Permission errors**: The first time you run the app, macOS will ask for **Accessibility permissions** to send media key events. Go to **System Settings > Privacy & Security > Accessibility** and enable the permission for your Terminal or iTerm2.
+```bash
+uv run prek run --all-files
+uv run ty check
+```
 
-**SoundSource volume not changing**: Run with `--volume-backend soundsource` and make sure SoundSource is installed/running and your output device (for example Fiio R7) is selected in SoundSource.
+## Troubleshooting
+
+- No MIDI devices: confirm the Ortho Remote is paired and visible in Audio MIDI Setup.
+- Play/pause issues: ensure a media app is active.
+- Next/previous issues: these actions are Spotify-only.
+- Permission prompts: grant Accessibility and (for Spotify control) Automation permissions to your terminal app.

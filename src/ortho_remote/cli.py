@@ -3,6 +3,7 @@
 import logging
 import os
 import signal
+import subprocess
 import sys
 import threading
 import time
@@ -10,7 +11,6 @@ from enum import Enum
 from typing import Optional
 
 import mido
-import osascript
 import Quartz
 import typer
 
@@ -106,7 +106,12 @@ def play_pause():
 def next_track():
     start_time = time.time()
     try:
-        osascript.run('tell application "Spotify" to next track')
+        subprocess.run(
+            ["osascript", "-e", 'tell application "Spotify" to next track'],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
         logger.info(f"⏭️  Next track ({time.time() - start_time:.3f}s)")
     except Exception as e:
         logger.warning(f"⚠️  Next track failed: Is Spotify running? ({e})")
@@ -115,7 +120,12 @@ def next_track():
 def previous_track():
     start_time = time.time()
     try:
-        osascript.run('tell application "Spotify" to previous track')
+        subprocess.run(
+            ["osascript", "-e", 'tell application "Spotify" to previous track'],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
         logger.info(f"⏮️  Previous track ({time.time() - start_time:.3f}s)")
     except Exception as e:
         logger.warning(f"⚠️  Previous track failed: Is Spotify running? ({e})")

@@ -1,6 +1,9 @@
 exclude = ["__pycache__", "terraform", ".git", ".venv"]
 
 [lint]
+# Pin the pre-0.17 default rule set so ruff upgrades don't change lint behaviour.
+select = ["E4", "E7", "E9", "F"]
+
 extend-ignore = [
     # In some cases, as determined by PEP 8,
     # Black will enforce an equal amount of whitespace around slice operators.
